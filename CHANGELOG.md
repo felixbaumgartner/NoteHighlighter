@@ -45,6 +45,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content script for DOM manipulation
 - Vanilla JavaScript (no external dependencies)
 
+## [1.1.0] - 2025-11-07
+
+### Added
+- **Target Document Feature**: Set a specific Google Doc to append all highlights to
+  - Configure target document via popup UI
+  - Paste Google Doc URL or ID
+  - Automatic extraction of document ID from URL
+  - All highlights append to the same document with formatted timestamps
+  - Option to switch back to creating new documents each time
+- Enhanced formatting for appended highlights:
+  - Timestamp for each highlight entry
+  - Visual separator between entries
+  - Source title included in metadata
+
+### Changed
+- Google Docs integration now supports two modes:
+  - Append to a specific target document (new)
+  - Create new document each time (existing behavior)
+- Improved popup UI with new "Target Document" section
+- Better visual feedback showing current document status
+
+### Technical
+- Updated `background.js` to check for target document ID before creating new docs
+- Enhanced `appendToGoogleDoc` function with better formatting
+- Added document ID extraction from Google Docs URLs
+- New Chrome Storage key: `targetDocumentId`
+
+## [1.0.0] - 2025-11-07
+
+### Added
+- Initial release of Note Highlighter Chrome extension
+- Text highlighting functionality on any webpage
+- Multiple highlight colors (Yellow, Green, Blue, Pink, Orange)
+- Persistent storage of highlights using Chrome Storage API
+- Google Docs integration for copying highlights
+- Context menu options for quick highlighting and copying
+- Extension popup with highlight management interface
+- Export highlights to JSON format
+- Clear all highlights functionality
+- Keyboard shortcut (Ctrl/Cmd + Click) to copy highlighted text
+- OAuth 2.0 authentication with Google
+- Icon generator tools (HTML and Python)
+- Comprehensive documentation (README, SETUP guide)
+
+### Features
+- **Highlight Colors**: Choose from 5 beautiful preset colors
+- **Persistent Highlights**: Highlights are saved and restored on page revisits
+- **Google Docs Integration**:
+  - Create new Google Docs with highlighted text
+  - Copy individual highlights
+  - Copy all highlights from a page at once
+- **User Interface**:
+  - Clean, modern popup interface
+  - Real-time highlight count
+  - Color picker for easy customization
+  - Highlight list with preview
+- **Export/Import**: Export highlights as JSON for backup
+- **Privacy-focused**: All data stored locally, no external tracking
+
+### Technical Details
+- Built with Manifest V3
+- Uses Chrome Storage API for data persistence
+- Implements Google Docs API v1 for document creation
+- Service worker architecture for background tasks
+- Content script for DOM manipulation
+- Vanilla JavaScript (no external dependencies)
+
 ## [Unreleased]
 
 ### Planned Features

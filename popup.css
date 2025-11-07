@@ -271,3 +271,66 @@ footer {
 .highlights-list::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Target Document Configuration */
+.target-doc-config {
+  margin-top: 16px;
+}
+
+.target-doc-config h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.doc-status {
+  background: #e3f2fd;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  border-left: 3px solid #2196f3;
+}
+
+.doc-status.active {
+  background: #e8f5e9;
+  border-left-color: #4caf50;
+}
+
+#doc-status-text {
+  font-size: 12px;
+  color: #555;
+  display: block;
+  word-break: break-all;
+}
+
+.doc-status.active #doc-status-text {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.doc-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.doc-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.doc-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+#clear-doc-btn {
+  width: 100%;
+  margin-top: 4px;
+}

@@ -7,7 +7,8 @@ A powerful Chrome extension that allows you to highlight text on any webpage and
 - **Text Highlighting**: Select any text on a webpage and highlight it with customizable colors
 - **Persistent Storage**: Your highlights are saved and restored when you revisit pages
 - **Multiple Colors**: Choose from 5 beautiful highlight colors (Yellow, Green, Blue, Pink, Orange)
-- **Google Docs Integration**: Copy individual highlights or all highlights to a new Google Doc
+- **Google Docs Integration**: Copy individual highlights or all highlights to Google Docs
+- **Target Document**: Set a specific Google Doc to append all highlights to, or create new docs each time
 - **Easy Management**: View, export, and clear your highlights through an intuitive popup interface
 - **Context Menu**: Right-click to quickly highlight or copy text
 - **Keyboard Shortcuts**: Ctrl/Cmd + Click on highlighted text to copy to Google Docs
@@ -64,10 +65,21 @@ A powerful Chrome extension that allows you to highlight text on any webpage and
 
 ### Copying to Google Docs
 
+**Setting a Target Document (Optional)**
+
+You can configure the extension to always append highlights to a specific Google Doc:
+
+1. Open the extension popup
+2. In the "Target Document" section, paste a Google Doc URL or ID
+3. Click "Set Document"
+4. All future highlights will be appended to this document with timestamps
+
+To go back to creating new documents each time, click "Use New Docs Each Time"
+
 **Method 1: Individual Highlight**
 1. Hold Ctrl (Windows/Linux) or Cmd (Mac)
 2. Click on any highlighted text
-3. A new Google Doc will be created with the text
+3. Text will be appended to your target document (if set) or a new doc will be created
 
 **Method 2: From Selection**
 1. Select text and right-click
@@ -76,7 +88,7 @@ A powerful Chrome extension that allows you to highlight text on any webpage and
 **Method 3: Copy All Highlights**
 1. Click the extension icon in the toolbar
 2. Click "Copy All to Docs"
-3. All highlights from the current page will be copied to a new Google Doc
+3. All highlights from the current page will be copied to your target document or a new doc
 
 ### Managing Highlights
 

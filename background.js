@@ -113,6 +113,28 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
       }
     }
 
+    // Check if there's a target document ID set
+    const result = await chrome.storage.local.get(['targetDocumentId']);
+    const targetDocId = result.targetDocumentId;
+
+    let documentId;
+
+    if (targetDocId) {
+      // Append to existing document
+      documentId = targetDocId;
+      const success = await appendToGoogleDoc(documentId, text, title);
+      if (!success.success) {
+        throw new Error(success.error || 'Failed to append to document');
+      }
+
+      // Open the document
+      chrome.tabs.create({
+        url: `https://docs.google.com/document/d/${documentId}/edit`
+      });
+
+      return { success: true, documentId: documentId, appended: true };
+    }
+
     // Create a new Google Doc with the highlighted text
     const createDocResponse = await fetch('https://docs.googleapis.com/v1/documents', {
       method: 'POST',
@@ -130,7 +152,7 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
     }
 
     const doc = await createDocResponse.json();
-    const documentId = doc.documentId;
+    documentId = doc.documentId;
 
     // Insert the highlighted text into the document
     const batchUpdateResponse = await fetch(
@@ -180,7 +202,7 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
 }
 
 // Alternative: Append to existing document
-async function appendToGoogleDoc(documentId, text) {
+async function appendToGoogleDoc(documentId, text, title = 'Highlight') {
   try {
     if (!isAuthenticated || !authToken) {
       const authResult = await authenticate();
@@ -206,6 +228,11 @@ async function appendToGoogleDoc(documentId, text) {
     const docData = await docResponse.json();
     const endIndex = docData.body.content[docData.body.content.length - 1].endIndex - 1;
 
+    // Format the text with timestamp and source
+    const timestamp = new Date().toLocaleString();
+    const separator = '─'.repeat(50);
+    const formattedText = `\n\n${separator}\n📌 ${title}\n⏰ ${timestamp}\n${separator}\n\n${text}\n`;
+
     // Append text
     const batchUpdateResponse = await fetch(
       `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
@@ -222,7 +249,7 @@ async function appendToGoogleDoc(documentId, text) {
                 location: {
                   index: endIndex
                 },
-                text: `\n\n${text}\n`
+                text: formattedText
               }
             }
           ]

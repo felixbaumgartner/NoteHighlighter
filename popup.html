@@ -50,6 +50,23 @@
         <span id="auth-message">Not connected</span>
         <button id="auth-btn" class="action-btn primary small">Connect Google</button>
       </div>
+
+      <div class="target-doc-config">
+        <h4>Target Document</h4>
+        <div id="current-doc-status" class="doc-status">
+          <span id="doc-status-text">No document set - will create new docs</span>
+        </div>
+        <div class="doc-input-group">
+          <input
+            type="text"
+            id="doc-url-input"
+            placeholder="Paste Google Doc URL or ID"
+            class="doc-input"
+          />
+          <button id="set-doc-btn" class="action-btn primary small">Set Document</button>
+        </div>
+        <button id="clear-doc-btn" class="action-btn secondary small">Use New Docs Each Time</button>
+      </div>
     </section>
 
     <footer>

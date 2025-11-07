@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   await loadHighlights();
   await checkAuthStatus();
+  await loadTargetDocument();
 });
 
 async function initialize() {
@@ -44,6 +45,10 @@ function setupEventListeners() {
 
   // Auth button
   document.getElementById('auth-btn').addEventListener('click', handleAuth);
+
+  // Target document buttons
+  document.getElementById('set-doc-btn').addEventListener('click', setTargetDocument);
+  document.getElementById('clear-doc-btn').addEventListener('click', clearTargetDocument);
 }
 
 async function selectColor(color) {
@@ -288,4 +293,61 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Target Document Management
+async function loadTargetDocument() {
+  const result = await chrome.storage.local.get(['targetDocumentId']);
+  const docId = result.targetDocumentId;
+
+  const statusDiv = document.getElementById('current-doc-status');
+  const statusText = document.getElementById('doc-status-text');
+
+  if (docId) {
+    statusDiv.classList.add('active');
+    statusText.textContent = `📄 Appending to: ${docId}`;
+  } else {
+    statusDiv.classList.remove('active');
+    statusText.textContent = 'No document set - will create new docs';
+  }
+}
+
+async function setTargetDocument() {
+  const input = document.getElementById('doc-url-input');
+  const urlOrId = input.value.trim();
+
+  if (!urlOrId) {
+    showNotification('Please enter a document URL or ID');
+    return;
+  }
+
+  // Extract document ID from URL or use as-is if it's just an ID
+  let docId = urlOrId;
+
+  // Check if it's a full URL
+  if (urlOrId.includes('docs.google.com')) {
+    const match = urlOrId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (match) {
+      docId = match[1];
+    } else {
+      showNotification('Invalid Google Docs URL');
+      return;
+    }
+  }
+
+  // Save the document ID
+  await chrome.storage.local.set({ targetDocumentId: docId });
+
+  // Clear the input
+  input.value = '';
+
+  // Update the UI
+  await loadTargetDocument();
+  showNotification('Target document set!');
+}
+
+async function clearTargetDocument() {
+  await chrome.storage.local.remove('targetDocumentId');
+  await loadTargetDocument();
+  showNotification('Target document cleared');
 }
