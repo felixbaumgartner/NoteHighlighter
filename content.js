@@ -15,6 +15,8 @@ class HighlightManager {
   }
 
   init() {
+    console.log('Note Highlighter: Initializing content script');
+
     // Load saved highlights from storage
     this.loadHighlights();
 
@@ -29,6 +31,8 @@ class HighlightManager {
 
     // Create context menu for highlights
     this.createHighlightMenu();
+
+    console.log('Note Highlighter: Content script initialized successfully');
   }
 
   async loadHighlights() {
@@ -63,6 +67,14 @@ class HighlightManager {
     const existingBtn = document.getElementById('highlight-btn');
     if (existingBtn) existingBtn.remove();
 
+    // Preserve the selection range and text BEFORE any user interaction
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0).cloneRange();
+    const selectedText = selection.toString().trim();
+
+    if (!selectedText) return;
+
     const button = document.createElement('div');
     button.id = 'highlight-btn';
     button.className = 'note-highlighter-btn';
@@ -73,38 +85,37 @@ class HighlightManager {
     button.style.position = 'absolute';
     button.style.left = `${x}px`;
     button.style.top = `${y + 10}px`;
+    button.style.zIndex = '999999';
 
     document.body.appendChild(button);
 
-    // Add click handlers
-    document.getElementById('do-highlight').addEventListener('click', () => {
-      this.highlightSelection(selection);
+    // Add click handlers with preserved range and text
+    document.getElementById('do-highlight').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.highlightRange(range, selectedText);
       button.remove();
     });
 
-    document.getElementById('copy-to-docs').addEventListener('click', () => {
-      this.copyToGoogleDocs(selection.toString());
+    document.getElementById('copy-to-docs').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.copyToGoogleDocs(selectedText);
       button.remove();
     });
 
     // Remove button when clicking elsewhere
     setTimeout(() => {
-      document.addEventListener('click', function removeBtn(e) {
+      const removeBtn = (e) => {
         if (!button.contains(e.target)) {
           button.remove();
           document.removeEventListener('click', removeBtn);
         }
-      });
+      };
+      document.addEventListener('click', removeBtn);
     }, 100);
   }
 
-  highlightSelection(selection) {
-    if (!selection.rangeCount) return;
-
-    const range = selection.getRangeAt(0);
-    const selectedText = selection.toString().trim();
-
-    if (!selectedText) return;
+  highlightRange(range, selectedText) {
+    if (!range || !selectedText) return;
 
     // Create highlight data
     const highlightData = {
@@ -126,6 +137,7 @@ class HighlightManager {
       // Add click handler to copy this highlight
       span.addEventListener('click', (e) => {
         if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
           this.copyToGoogleDocs(highlightData.text);
         }
       });
@@ -134,11 +146,22 @@ class HighlightManager {
       this.saveHighlight(highlightData);
 
       // Clear selection
-      selection.removeAllRanges();
+      window.getSelection().removeAllRanges();
     } catch (e) {
       console.error('Error applying highlight:', e);
       this.showNotification('Could not highlight this selection. Try a simpler text selection.');
     }
+  }
+
+  highlightSelection(selection) {
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedText = selection.toString().trim();
+
+    if (!selectedText) return;
+
+    this.highlightRange(range, selectedText);
   }
 
   applyHighlight(highlightData) {
@@ -206,17 +229,45 @@ class HighlightManager {
   }
 
   async copyToGoogleDocs(text) {
+    if (!text || text.trim().length === 0) {
+      this.showNotification('No text to copy');
+      return;
+    }
+
+    console.log('Copying to Google Docs:', text);
+
+    // Check if chrome.runtime is available
+    if (!chrome || !chrome.runtime) {
+      console.error('Chrome runtime not available');
+      this.showNotification('Extension error: Chrome runtime not available');
+      return;
+    }
+
     // Send message to background script to handle Google Docs API
-    chrome.runtime.sendMessage({
-      action: 'copyToGoogleDocs',
-      text: text
-    }, (response) => {
-      if (response && response.success) {
-        this.showNotification('Copied to Google Docs!');
-      } else {
-        this.showNotification('Failed to copy to Google Docs. Please check permissions.');
-      }
-    });
+    try {
+      chrome.runtime.sendMessage({
+        action: 'copyToGoogleDocs',
+        text: text,
+        title: `Highlight from ${document.title}`
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Runtime error:', chrome.runtime.lastError);
+          this.showNotification(`Error: ${chrome.runtime.lastError.message}`);
+          return;
+        }
+
+        if (response && response.success) {
+          this.showNotification('Copied to Google Docs!');
+        } else {
+          const errorMsg = response && response.error ? response.error : 'Unknown error';
+          console.error('Copy to Docs failed:', errorMsg);
+          this.showNotification(`Failed to copy: ${errorMsg}`);
+        }
+      });
+    } catch (error) {
+      console.error('Exception copying to Google Docs:', error);
+      this.showNotification('Error: ' + error.message);
+    }
   }
 
   async handleMessage(request, sendResponse) {

@@ -37,10 +37,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleMessage(request, sender, sendResponse) {
+  console.log('Background: Received message:', request.action);
+
   switch (request.action) {
     case 'copyToGoogleDocs':
-      await copyToGoogleDocs(request.text, request.title);
-      sendResponse({ success: true });
+      try {
+        const result = await copyToGoogleDocs(request.text, request.title);
+        console.log('Background: Copy result:', result);
+        sendResponse(result);
+      } catch (error) {
+        console.error('Background: Copy error:', error);
+        sendResponse({ success: false, error: error.message });
+      }
       break;
 
     case 'authenticate':

@@ -72,6 +72,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added document ID extraction from Google Docs URLs
 - New Chrome Storage key: `targetDocumentId`
 
+## [1.1.1] - 2025-11-07
+
+### Fixed
+- **Critical Fix**: Highlighting now works correctly - selection is preserved when clicking highlight button
+- **Critical Fix**: Copy to Google Docs now works properly - text is correctly passed to background script
+- Fixed selection lost issue when user clicks the highlight button
+- Fixed event propagation preventing button clicks
+- Improved error handling with better user feedback
+- Added detailed console logging for debugging
+- Fixed background script message handling to properly return results
+
+### Technical
+- Added `highlightRange` method to work with preserved ranges instead of selection objects
+- Cloned selection range before user interaction to prevent loss
+- Added `e.stopPropagation()` to button click handlers
+- Improved `copyToGoogleDocs` error handling with runtime checks
+- Added initialization logging to content script
+- Enhanced background script error logging
+
 ## [1.0.0] - 2025-11-07
 
 ### Added
