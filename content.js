@@ -56,24 +56,48 @@ class HighlightManager {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
 
-    if (selectedText.length === 0) return;
+    console.log('Note Highlighter: Text selection detected', {
+      selectedText: selectedText.substring(0, 50),
+      length: selectedText.length,
+      rangeCount: selection.rangeCount,
+      mousePosition: { x: e.pageX, y: e.pageY }
+    });
+
+    if (selectedText.length === 0) {
+      console.log('Note Highlighter: No text selected, skipping');
+      return;
+    }
 
     // Show highlight button near selection
+    console.log('Note Highlighter: Showing highlight button');
     this.showHighlightButton(e.pageX, e.pageY, selection);
   }
 
   showHighlightButton(x, y, selection) {
+    console.log('Note Highlighter: showHighlightButton called');
+
     // Remove existing button if any
     const existingBtn = document.getElementById('highlight-btn');
-    if (existingBtn) existingBtn.remove();
+    if (existingBtn) {
+      console.log('Note Highlighter: Removing existing button');
+      existingBtn.remove();
+    }
 
     // Preserve the selection range and text BEFORE any user interaction
-    if (!selection.rangeCount) return;
+    if (!selection.rangeCount) {
+      console.error('Note Highlighter: No range count in selection');
+      return;
+    }
 
     const range = selection.getRangeAt(0).cloneRange();
     const selectedText = selection.toString().trim();
 
-    if (!selectedText) return;
+    console.log('Note Highlighter: Creating button for text:', selectedText.substring(0, 50));
+
+    if (!selectedText) {
+      console.error('Note Highlighter: Selected text is empty');
+      return;
+    }
 
     const button = document.createElement('div');
     button.id = 'highlight-btn';
@@ -87,16 +111,21 @@ class HighlightManager {
     button.style.top = `${y + 10}px`;
     button.style.zIndex = '999999';
 
+    console.log('Note Highlighter: Appending button to body at position', { x, y: y + 10 });
     document.body.appendChild(button);
+
+    console.log('Note Highlighter: Button appended, adding event listeners');
 
     // Add click handlers with preserved range and text
     document.getElementById('do-highlight').addEventListener('click', (e) => {
+      console.log('Note Highlighter: Highlight button clicked');
       e.stopPropagation();
       this.highlightRange(range, selectedText);
       button.remove();
     });
 
     document.getElementById('copy-to-docs').addEventListener('click', (e) => {
+      console.log('Note Highlighter: Copy to Docs button clicked');
       e.stopPropagation();
       this.copyToGoogleDocs(selectedText);
       button.remove();
@@ -106,6 +135,7 @@ class HighlightManager {
     setTimeout(() => {
       const removeBtn = (e) => {
         if (!button.contains(e.target)) {
+          console.log('Note Highlighter: Removing button (clicked elsewhere)');
           button.remove();
           document.removeEventListener('click', removeBtn);
         }
@@ -115,7 +145,15 @@ class HighlightManager {
   }
 
   highlightRange(range, selectedText) {
-    if (!range || !selectedText) return;
+    console.log('Note Highlighter: highlightRange called', {
+      hasRange: !!range,
+      textLength: selectedText ? selectedText.length : 0
+    });
+
+    if (!range || !selectedText) {
+      console.error('Note Highlighter: Missing range or text');
+      return;
+    }
 
     // Create highlight data
     const highlightData = {
@@ -125,18 +163,24 @@ class HighlightManager {
       id: this.generateId()
     };
 
+    console.log('Note Highlighter: Created highlight data', highlightData);
+
     // Wrap selection in highlight span
     const span = document.createElement('span');
     span.className = 'note-highlight';
     span.setAttribute('data-highlight-id', highlightData.id);
     span.style.backgroundColor = this.currentColor;
 
+    console.log('Note Highlighter: Created span, attempting to surround contents');
+
     try {
       range.surroundContents(span);
+      console.log('Note Highlighter: Successfully surrounded contents');
 
       // Add click handler to copy this highlight
       span.addEventListener('click', (e) => {
         if (e.ctrlKey || e.metaKey) {
+          console.log('Note Highlighter: Ctrl/Cmd + Click on highlight');
           e.preventDefault();
           this.copyToGoogleDocs(highlightData.text);
         }
@@ -144,11 +188,12 @@ class HighlightManager {
 
       // Save highlight
       this.saveHighlight(highlightData);
+      console.log('Note Highlighter: Highlight saved');
 
       // Clear selection
       window.getSelection().removeAllRanges();
     } catch (e) {
-      console.error('Error applying highlight:', e);
+      console.error('Note Highlighter: Error applying highlight:', e);
       this.showNotification('Could not highlight this selection. Try a simpler text selection.');
     }
   }

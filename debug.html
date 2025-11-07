@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Highlighter - Debug Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .debug-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .success {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+        }
+        .test-text {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        .log {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-error {
+            color: #ef5350;
+        }
+        .log-success {
+            color: #66bb6a;
+        }
+        .log-info {
+            color: #42a5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Note Highlighter - Debug Tool</h1>
+
+    <div class="debug-section">
+        <h2>1. Extension Status Check</h2>
+        <button onclick="checkExtension()">Check Extension</button>
+        <div id="extension-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>2. Content Script Check</h2>
+        <button onclick="checkContentScript()">Check Content Script</button>
+        <div id="content-script-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>3. Test Text Selection</h2>
+        <p>Select the text below and see what happens:</p>
+        <div class="test-text">
+            <p><strong>Test Paragraph 1:</strong> This is a simple test paragraph. Try selecting this text to see if the highlight button appears. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            <p><strong>Test Paragraph 2:</strong> Another paragraph for testing. Select any part of this text and click the highlight button that should appear.</p>
+        </div>
+        <button onclick="testSelection()">Test Selection API</button>
+        <div id="selection-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>4. Storage Check</h2>
+        <button onclick="checkStorage()">Check Chrome Storage</button>
+        <button onclick="clearStorage()">Clear All Storage</button>
+        <div id="storage-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>5. Manual Highlight Test</h2>
+        <button onclick="manualHighlight()">Manually Trigger Highlight</button>
+        <div id="manual-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>6. Console Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="debug-log" class="log">
+            <div class="log-entry log-info">Debug log initialized...</div>
+        </div>
+    </div>
+
+    <script>
+        let logEntries = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            logEntries.push({ message: entry, type: type });
+
+            const logDiv = document.getElementById('debug-log');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = `log-entry log-${type}`;
+            entryDiv.textContent = entry;
+            logDiv.appendChild(entryDiv);
+            logDiv.scrollTop = logDiv.scrollHeight;
+
+            console.log(message);
+        }
+
+        function clearLog() {
+            logEntries = [];
+            document.getElementById('debug-log').innerHTML = '<div class="log-entry log-info">Log cleared...</div>';
+        }
+
+        function setStatus(elementId, html, isError = false) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = html;
+            el.className = isError ? 'error' : 'success';
+            el.style.marginTop = '10px';
+            el.style.padding = '10px';
+            el.style.borderRadius = '5px';
+        }
+
+        // Check if extension is loaded
+        function checkExtension() {
+            log('Checking extension availability...', 'info');
+
+            if (typeof chrome === 'undefined') {
+                setStatus('extension-status', '❌ Chrome API not available. Are you running in Chrome?', true);
+                log('ERROR: Chrome API not available', 'error');
+                return;
+            }
+
+            if (!chrome.runtime) {
+                setStatus('extension-status', '❌ Chrome runtime not available. Extension not loaded?', true);
+                log('ERROR: Chrome runtime not available', 'error');
+                return;
+            }
+
+            if (!chrome.runtime.id) {
+                setStatus('extension-status', '❌ No extension ID found. Extension not loaded properly.', true);
+                log('ERROR: No extension ID', 'error');
+                return;
+            }
+
+            const manifest = chrome.runtime.getManifest();
+            setStatus('extension-status', `
+                ✅ Extension loaded successfully!<br>
+                <strong>Name:</strong> ${manifest.name}<br>
+                <strong>Version:</strong> ${manifest.version}<br>
+                <strong>ID:</strong> ${chrome.runtime.id}
+            `, false);
+            log(`Extension loaded: ${manifest.name} v${manifest.version}`, 'success');
+        }
+
+        // Check content script
+        function checkContentScript() {
+            log('Checking content script...', 'info');
+
+            // Check if highlightManager exists
+            if (typeof highlightManager !== 'undefined') {
+                setStatus('content-script-status', `
+                    ✅ Content script loaded!<br>
+                    <strong>Highlight Manager:</strong> Active<br>
+                    <strong>Current Color:</strong> ${highlightManager.currentColor}
+                `, false);
+                log('Content script loaded successfully', 'success');
+            } else {
+                setStatus('content-script-status', `
+                    ❌ Content script NOT loaded!<br>
+                    <strong>Problem:</strong> highlightManager object not found<br>
+                    <strong>Action:</strong> Try reloading the extension
+                `, true);
+                log('ERROR: Content script not loaded', 'error');
+            }
+        }
+
+        // Test selection
+        function testSelection() {
+            log('Testing selection API...', 'info');
+
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+
+            if (selectedText.length === 0) {
+                setStatus('selection-status', '⚠️ No text selected. Please select some text first.', true);
+                log('No text selected', 'error');
+                return;
+            }
+
+            setStatus('selection-status', `
+                ✅ Selection API working!<br>
+                <strong>Selected text:</strong> "${selectedText}"<br>
+                <strong>Range count:</strong> ${selection.rangeCount}
+            `, false);
+            log(`Selected: "${selectedText}"`, 'success');
+
+            // Try to trigger the highlight
+            if (typeof highlightManager !== 'undefined') {
+                log('Attempting to trigger highlight...', 'info');
+                highlightManager.handleTextSelection({ pageX: 100, pageY: 100 });
+            }
+        }
+
+        // Check storage
+        async function checkStorage() {
+            log('Checking Chrome storage...', 'info');
+
+            try {
+                const highlights = await chrome.storage.local.get(['highlights']);
+                const targetDoc = await chrome.storage.local.get(['targetDocumentId']);
+                const color = await chrome.storage.local.get(['selectedColor']);
+
+                let storageHtml = '✅ Storage accessible!<br>';
+                storageHtml += `<strong>Highlights:</strong> ${JSON.stringify(highlights).length} chars<br>`;
+                storageHtml += `<strong>Target Doc:</strong> ${targetDoc.targetDocumentId || 'Not set'}<br>`;
+                storageHtml += `<strong>Selected Color:</strong> ${color.selectedColor || 'Default'}<br>`;
+                storageHtml += `<pre>${JSON.stringify({highlights, targetDoc, color}, null, 2)}</pre>`;
+
+                setStatus('storage-status', storageHtml, false);
+                log('Storage check successful', 'success');
+            } catch (error) {
+                setStatus('storage-status', `❌ Storage error: ${error.message}`, true);
+                log(`Storage error: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearStorage() {
+            log('Clearing storage...', 'info');
+            try {
+                await chrome.storage.local.clear();
+                setStatus('storage-status', '✅ Storage cleared!', false);
+                log('Storage cleared successfully', 'success');
+            } catch (error) {
+                setStatus('storage-status', `❌ Error: ${error.message}`, true);
+                log(`Clear error: ${error.message}`, 'error');
+            }
+        }
+
+        // Manual highlight test
+        function manualHighlight() {
+            log('Manual highlight test...', 'info');
+
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+
+            if (selectedText.length === 0) {
+                setStatus('manual-status', '⚠️ Please select some text first!', true);
+                log('No text selected for manual highlight', 'error');
+                return;
+            }
+
+            if (typeof highlightManager === 'undefined') {
+                setStatus('manual-status', '❌ Highlight manager not loaded!', true);
+                log('ERROR: Highlight manager not available', 'error');
+                return;
+            }
+
+            try {
+                const range = selection.getRangeAt(0);
+                highlightManager.highlightRange(range, selectedText);
+                setStatus('manual-status', `✅ Highlight attempted!<br>Text: "${selectedText}"`, false);
+                log('Manual highlight triggered', 'success');
+            } catch (error) {
+                setStatus('manual-status', `❌ Error: ${error.message}`, true);
+                log(`Manual highlight error: ${error.message}`, 'error');
+            }
+        }
+
+        // Monitor mouseup events
+        document.addEventListener('mouseup', (e) => {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+            if (text.length > 0) {
+                log(`Mouse up - text selected: "${text.substring(0, 50)}..."`, 'info');
+            }
+        });
+
+        // Auto-run checks on load
+        window.addEventListener('load', () => {
+            log('Page loaded, running auto-checks...', 'info');
+            setTimeout(() => {
+                checkExtension();
+                checkContentScript();
+            }, 1000);
+        });
+
+        // Intercept console
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            log(args.join(' '), 'info');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            log(args.join(' '), 'error');
+        };
+    </script>
+</body>
+</html>
