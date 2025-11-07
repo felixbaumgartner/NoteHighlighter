@@ -103,33 +103,52 @@ class HighlightManager {
     button.id = 'highlight-btn';
     button.className = 'note-highlighter-btn';
     button.innerHTML = `
-      <button id="do-highlight" title="Highlight">✨ Highlight</button>
-      <button id="copy-to-docs" title="Copy to Google Docs">📄 Copy to Docs</button>
+      <button id="do-highlight" title="Highlight" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">✨ Highlight</button>
+      <button id="copy-to-docs" title="Copy to Clipboard/Google Docs" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">📄 Copy</button>
     `;
-    button.style.position = 'absolute';
-    button.style.left = `${x}px`;
-    button.style.top = `${y + 10}px`;
-    button.style.zIndex = '999999';
+    button.style.cssText = `
+      position: fixed !important;
+      left: ${x}px !important;
+      top: ${y + 20}px !important;
+      z-index: 2147483647 !important;
+      background: white !important;
+      border: 2px solid #667eea !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+      padding: 8px !important;
+      display: flex !important;
+      gap: 8px !important;
+      pointer-events: auto !important;
+    `;
 
-    console.log('Note Highlighter: Appending button to body at position', { x, y: y + 10 });
+    console.log('Note Highlighter: Appending button to body at position', { x, y: y + 20 });
     document.body.appendChild(button);
 
     console.log('Note Highlighter: Button appended, adding event listeners');
 
     // Add click handlers with preserved range and text
-    document.getElementById('do-highlight').addEventListener('click', (e) => {
-      console.log('Note Highlighter: Highlight button clicked');
-      e.stopPropagation();
-      this.highlightRange(range, selectedText);
-      button.remove();
-    });
+    const highlightBtn = document.getElementById('do-highlight');
+    const copyBtn = document.getElementById('copy-to-docs');
 
-    document.getElementById('copy-to-docs').addEventListener('click', (e) => {
-      console.log('Note Highlighter: Copy to Docs button clicked');
-      e.stopPropagation();
-      this.copyToGoogleDocs(selectedText);
-      button.remove();
-    });
+    if (highlightBtn) {
+      highlightBtn.addEventListener('click', (e) => {
+        console.log('Note Highlighter: Highlight button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        this.highlightRange(range, selectedText);
+        button.remove();
+      });
+    }
+
+    if (copyBtn) {
+      copyBtn.addEventListener('click', (e) => {
+        console.log('Note Highlighter: Copy button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        this.copyToGoogleDocs(selectedText);
+        button.remove();
+      });
+    }
 
     // Remove button when clicking elsewhere
     setTimeout(() => {
@@ -297,21 +316,42 @@ class HighlightManager {
       }, (response) => {
         if (chrome.runtime.lastError) {
           console.error('Runtime error:', chrome.runtime.lastError);
-          this.showNotification(`Error: ${chrome.runtime.lastError.message}`);
+          // Fallback to clipboard if Google Docs fails
+          this.copyToClipboard(text);
           return;
         }
 
         if (response && response.success) {
-          this.showNotification('Copied to Google Docs!');
+          this.showNotification('✅ Copied to Google Docs!');
         } else {
           const errorMsg = response && response.error ? response.error : 'Unknown error';
           console.error('Copy to Docs failed:', errorMsg);
-          this.showNotification(`Failed to copy: ${errorMsg}`);
+
+          // If Google Docs fails, try clipboard as fallback
+          if (errorMsg.includes('Authentication') || errorMsg.includes('client_id') || errorMsg.includes('auth')) {
+            this.showNotification('⚠️ Google Docs not configured. Copying to clipboard instead...');
+            this.copyToClipboard(text);
+          } else {
+            this.showNotification(`Failed: ${errorMsg}. Copying to clipboard...`);
+            this.copyToClipboard(text);
+          }
         }
       });
     } catch (error) {
       console.error('Exception copying to Google Docs:', error);
-      this.showNotification('Error: ' + error.message);
+      this.showNotification('Error: ' + error.message + '. Copying to clipboard...');
+      this.copyToClipboard(text);
+    }
+  }
+
+  async copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showNotification('📋 Copied to clipboard!');
+      console.log('Text copied to clipboard successfully');
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      this.showNotification('❌ Failed to copy to clipboard');
     }
   }
 

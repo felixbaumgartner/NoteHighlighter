@@ -154,15 +154,76 @@ The extension requires the following permissions:
 
 ## Troubleshooting
 
+### Highlights not appearing / Button not showing
+**v1.1.3 Fix Applied**:
+- The highlight button now uses `position: fixed` with inline styles for better visibility
+- Button has maximum z-index to appear above all page elements
+- Check browser console (F12) for detailed logs
+- Try on a simple page first (like example.com) to verify extension is working
+- Ensure you've reloaded the extension after installation: `chrome://extensions/` > Click reload button
+
+**Steps to reload the extension:**
+1. Go to `chrome://extensions/`
+2. Find "Note Highlighter"
+3. Click the reload icon (circular arrow)
+4. Refresh the webpage you're testing on
+5. Try selecting text again
+
+### Copy to Google Docs not working
+**v1.1.3 Fix Applied**:
+- Now includes automatic clipboard fallback when Google Docs fails
+- Extension will copy to clipboard if OAuth is not configured
+- Better error messages showing what went wrong
+
+**Two ways to use the copy feature:**
+
+**Option 1: Quick Setup (Clipboard Only - Works Immediately)**
+- The extension now automatically falls back to clipboard
+- When you click "Copy", it will copy to clipboard instead of Google Docs if OAuth is not set up
+- You'll see a notification "📋 Copied to clipboard!"
+- Paste the text manually into your Google Doc
+
+**Option 2: Full Google Docs Integration (Requires Setup)**
+1. **You must set up OAuth credentials** - see "Setting up Google OAuth" below
+2. Without valid OAuth credentials, direct Google Docs copying won't work
+3. The manifest.json currently has a placeholder: `YOUR_CLIENT_ID.apps.googleusercontent.com`
+4. Follow the Google OAuth setup steps in the Installation section
+
+### Setting up Google OAuth (For Direct Google Docs Integration)
+
+**Important**: This is optional. The extension will work with clipboard fallback without this setup.
+
+To enable direct Google Docs integration:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select existing)
+3. Enable **Google Docs API**:
+   - Click "Enable APIs and Services"
+   - Search for "Google Docs API"
+   - Click "Enable"
+4. Create OAuth credentials:
+   - Go to "Credentials" tab
+   - Click "Create Credentials" > "OAuth client ID"
+   - If prompted, configure OAuth consent screen first
+   - Choose "Chrome extension" as application type
+   - Add your extension ID (found in `chrome://extensions/`)
+5. Copy the Client ID
+6. Update `manifest.json`:
+   ```json
+   "oauth2": {
+     "client_id": "YOUR_ACTUAL_CLIENT_ID.apps.googleusercontent.com",
+     "scopes": [
+       "https://www.googleapis.com/auth/documents"
+     ]
+   }
+   ```
+7. Reload the extension in Chrome
+8. Click "Connect Google" in the popup
+9. Grant permissions
+
 ### Highlights not saving
 - Check if you've granted storage permissions
 - Try refreshing the page after highlighting
-
-### Google Docs integration not working
-1. Make sure you've set up OAuth credentials in manifest.json
-2. Click "Connect Google" in the extension popup
-3. Grant the necessary permissions
-4. Check the browser console for error messages
 
 ### Extension not loading
 - Ensure all files are in the correct locations
