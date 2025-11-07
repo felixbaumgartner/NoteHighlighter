@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Note Highlighter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>✨ Note Highlighter</h1>
+      <p class="subtitle">Highlight and save your notes</p>
+    </header>
+
+    <section class="color-picker">
+      <h3>Highlight Color</h3>
+      <div class="color-options">
+        <button class="color-btn active" data-color="#ffeb3b" style="background-color: #ffeb3b;" title="Yellow"></button>
+        <button class="color-btn" data-color="#8bc34a" style="background-color: #8bc34a;" title="Green"></button>
+        <button class="color-btn" data-color="#64b5f6" style="background-color: #64b5f6;" title="Blue"></button>
+        <button class="color-btn" data-color="#f48fb1" style="background-color: #f48fb1;" title="Pink"></button>
+        <button class="color-btn" data-color="#ffb74d" style="background-color: #ffb74d;" title="Orange"></button>
+      </div>
+    </section>
+
+    <section class="highlights-section">
+      <h3>Current Page Highlights</h3>
+      <div id="highlights-count" class="count">0 highlights</div>
+      <div id="highlights-list" class="highlights-list">
+        <p class="empty-state">No highlights yet. Select text on the page to highlight!</p>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="export-btn" class="action-btn secondary">
+        📥 Export Highlights
+      </button>
+      <button id="clear-btn" class="action-btn danger">
+        🗑️ Clear All
+      </button>
+      <button id="copy-all-btn" class="action-btn primary">
+        📄 Copy All to Docs
+      </button>
+    </section>
+
+    <section class="google-docs-section">
+      <h3>Google Docs Integration</h3>
+      <div id="auth-status" class="auth-status">
+        <span id="auth-message">Not connected</span>
+        <button id="auth-btn" class="action-btn primary small">Connect Google</button>
+      </div>
+    </section>
+
+    <footer>
+      <div class="instructions">
+        <p><strong>How to use:</strong></p>
+        <ul>
+          <li>Select text on any webpage</li>
+          <li>Click "Highlight" button</li>
+          <li>Ctrl/Cmd + Click highlighted text to copy to Google Docs</li>
+        </ul>
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

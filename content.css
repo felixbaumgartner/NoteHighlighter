@@ -1,0 +1,117 @@
+/* Content styles for Note Highlighter extension */
+
+.note-highlight {
+  cursor: pointer;
+  position: relative;
+  padding: 2px 0;
+  border-radius: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.note-highlight:hover {
+  opacity: 0.8;
+}
+
+.note-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Highlight button that appears on text selection */
+.note-highlighter-btn {
+  z-index: 999999;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.note-highlighter-btn button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+
+.note-highlighter-btn button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.note-highlighter-btn button:active {
+  transform: translateY(0);
+}
+
+#copy-to-docs {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+}
+
+/* Notification styles */
+.note-highlighter-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #323232;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000000;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.note-highlighter-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Color variations for highlights */
+.note-highlight[data-color="yellow"] {
+  background-color: #ffeb3b;
+}
+
+.note-highlight[data-color="green"] {
+  background-color: #8bc34a;
+}
+
+.note-highlight[data-color="blue"] {
+  background-color: #64b5f6;
+}
+
+.note-highlight[data-color="pink"] {
+  background-color: #f48fb1;
+}
+
+.note-highlight[data-color="orange"] {
+  background-color: #ffb74d;
+}

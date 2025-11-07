@@ -1,0 +1,261 @@
+// Background service worker for Note Highlighter extension
+
+let authToken = null;
+let isAuthenticated = false;
+
+// Initialize context menu
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: 'highlightText',
+    title: 'Highlight selected text',
+    contexts: ['selection']
+  });
+
+  chrome.contextMenus.create({
+    id: 'copyToGoogleDocs',
+    title: 'Copy to Google Docs',
+    contexts: ['selection']
+  });
+});
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'highlightText') {
+    chrome.tabs.sendMessage(tab.id, {
+      action: 'highlightSelection',
+      text: info.selectionText
+    });
+  } else if (info.menuItemId === 'copyToGoogleDocs') {
+    copyToGoogleDocs(info.selectionText);
+  }
+});
+
+// Listen for messages from content scripts and popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  handleMessage(request, sender, sendResponse);
+  return true; // Keep channel open for async response
+});
+
+async function handleMessage(request, sender, sendResponse) {
+  switch (request.action) {
+    case 'copyToGoogleDocs':
+      await copyToGoogleDocs(request.text, request.title);
+      sendResponse({ success: true });
+      break;
+
+    case 'authenticate':
+      const authResult = await authenticate();
+      sendResponse(authResult);
+      break;
+
+    case 'checkAuth':
+      sendResponse({ authenticated: isAuthenticated });
+      break;
+
+    case 'signOut':
+      await signOut();
+      sendResponse({ success: true });
+      break;
+
+    default:
+      sendResponse({ error: 'Unknown action' });
+  }
+}
+
+// Authentication with Google
+async function authenticate() {
+  try {
+    // Get OAuth token
+    const token = await new Promise((resolve, reject) => {
+      chrome.identity.getAuthToken({ interactive: true }, (token) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(token);
+        }
+      });
+    });
+
+    if (token) {
+      authToken = token;
+      isAuthenticated = true;
+      return { success: true, token: token };
+    }
+
+    return { success: false, error: 'No token received' };
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function signOut() {
+  if (authToken) {
+    await new Promise((resolve) => {
+      chrome.identity.removeCachedAuthToken({ token: authToken }, () => {
+        resolve();
+      });
+    });
+
+    authToken = null;
+    isAuthenticated = false;
+  }
+}
+
+// Copy text to Google Docs
+async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
+  try {
+    // Check if authenticated
+    if (!isAuthenticated || !authToken) {
+      const authResult = await authenticate();
+      if (!authResult.success) {
+        throw new Error('Authentication failed');
+      }
+    }
+
+    // Create a new Google Doc with the highlighted text
+    const createDocResponse = await fetch('https://docs.googleapis.com/v1/documents', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: `${title} - ${new Date().toLocaleDateString()}`
+      })
+    });
+
+    if (!createDocResponse.ok) {
+      throw new Error(`Failed to create document: ${createDocResponse.status}`);
+    }
+
+    const doc = await createDocResponse.json();
+    const documentId = doc.documentId;
+
+    // Insert the highlighted text into the document
+    const batchUpdateResponse = await fetch(
+      `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              insertText: {
+                location: {
+                  index: 1
+                },
+                text: text
+              }
+            }
+          ]
+        })
+      }
+    );
+
+    if (!batchUpdateResponse.ok) {
+      throw new Error(`Failed to update document: ${batchUpdateResponse.status}`);
+    }
+
+    // Open the created document in a new tab
+    chrome.tabs.create({
+      url: `https://docs.google.com/document/d/${documentId}/edit`
+    });
+
+    return { success: true, documentId: documentId };
+  } catch (error) {
+    console.error('Error copying to Google Docs:', error);
+
+    // If authentication error, try to re-authenticate
+    if (error.message.includes('401') || error.message.includes('auth')) {
+      authToken = null;
+      isAuthenticated = false;
+    }
+
+    return { success: false, error: error.message };
+  }
+}
+
+// Alternative: Append to existing document
+async function appendToGoogleDoc(documentId, text) {
+  try {
+    if (!isAuthenticated || !authToken) {
+      const authResult = await authenticate();
+      if (!authResult.success) {
+        throw new Error('Authentication failed');
+      }
+    }
+
+    // Get document info to find the end index
+    const docResponse = await fetch(
+      `https://docs.googleapis.com/v1/documents/${documentId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      }
+    );
+
+    if (!docResponse.ok) {
+      throw new Error(`Failed to get document: ${docResponse.status}`);
+    }
+
+    const docData = await docResponse.json();
+    const endIndex = docData.body.content[docData.body.content.length - 1].endIndex - 1;
+
+    // Append text
+    const batchUpdateResponse = await fetch(
+      `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              insertText: {
+                location: {
+                  index: endIndex
+                },
+                text: `\n\n${text}\n`
+              }
+            }
+          ]
+        })
+      }
+    );
+
+    if (!batchUpdateResponse.ok) {
+      throw new Error(`Failed to update document: ${batchUpdateResponse.status}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error appending to Google Doc:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Store default document ID for appending
+async function setDefaultDocument(documentId) {
+  await chrome.storage.local.set({ defaultDocumentId: documentId });
+}
+
+async function getDefaultDocument() {
+  const result = await chrome.storage.local.get(['defaultDocumentId']);
+  return result.defaultDocumentId;
+}
+
+// Export functions for testing
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    authenticate,
+    copyToGoogleDocs,
+    appendToGoogleDoc
+  };
+}
