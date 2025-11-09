@@ -122,7 +122,7 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
     }
 
     // Check if there's a target document ID set
-    const result = await chrome.storage.local.get(['targetDocumentId']);
+    const result = await chrome.storage.sync.get(['targetDocumentId']);
     const targetDocId = result.targetDocumentId;
 
     let documentId;
@@ -278,11 +278,11 @@ async function appendToGoogleDoc(documentId, text, title = 'Highlight') {
 
 // Store default document ID for appending
 async function setDefaultDocument(documentId) {
-  await chrome.storage.local.set({ defaultDocumentId: documentId });
+  await chrome.storage.sync.set({ defaultDocumentId: documentId });
 }
 
 async function getDefaultDocument() {
-  const result = await chrome.storage.local.get(['defaultDocumentId']);
+  const result = await chrome.storage.sync.get(['defaultDocumentId']);
   return result.defaultDocumentId;
 }
 

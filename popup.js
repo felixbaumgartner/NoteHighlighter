@@ -18,7 +18,7 @@ async function initialize() {
   currentTab = tab;
 
   // Load saved color preference
-  const result = await chrome.storage.local.get(['selectedColor']);
+  const result = await chrome.storage.sync.get(['selectedColor']);
   if (result.selectedColor) {
     currentColor = result.selectedColor;
     updateColorSelection(currentColor);
@@ -56,7 +56,7 @@ async function selectColor(color) {
   updateColorSelection(color);
 
   // Save color preference
-  await chrome.storage.local.set({ selectedColor: color });
+  await chrome.storage.sync.set({ selectedColor: color });
 
   // Send message to content script
   chrome.tabs.sendMessage(currentTab.id, {
@@ -132,12 +132,12 @@ function displayHighlights(highlights) {
 async function deleteHighlight(index) {
   // Get current highlights
   const url = currentTab.url;
-  const result = await chrome.storage.local.get(['highlights']);
+  const result = await chrome.storage.sync.get(['highlights']);
   const allHighlights = result.highlights || {};
 
   if (allHighlights[url]) {
     allHighlights[url].splice(index, 1);
-    await chrome.storage.local.set({ highlights: allHighlights });
+    await chrome.storage.sync.set({ highlights: allHighlights });
     await loadHighlights();
 
     // Reload the page to refresh highlights
@@ -152,13 +152,16 @@ async function exportHighlights() {
     });
 
     if (response && response.data) {
-      const dataStr = JSON.stringify(response.data, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
+      // Export as formatted text with date grouping
+      const formattedText = formatGroupedHighlights(response.data.highlights, currentTab.title);
+      const exportContent = `Highlights from: ${response.data.url}\nPage Title: ${response.data.title}\nExported: ${new Date(response.data.exportDate).toLocaleString()}\n\n${'='.repeat(50)}\n${formattedText}`;
+
+      const blob = new Blob([exportContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = `highlights_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `highlights_${new Date().toISOString().split('T')[0]}.txt`;
       a.click();
 
       URL.revokeObjectURL(url);
@@ -194,11 +197,12 @@ async function copyAllToGoogleDocs() {
     });
 
     if (response && response.highlights && response.highlights.length > 0) {
-      const allText = response.highlights.map(h => h.text).join('\n\n');
+      // Use date-grouped formatting
+      const formattedText = formatGroupedHighlights(response.highlights, currentTab.title);
 
       chrome.runtime.sendMessage({
         action: 'copyToGoogleDocs',
-        text: allText,
+        text: formattedText,
         title: `Highlights from ${currentTab.title}`
       }, (result) => {
         if (result && result.success) {
@@ -295,9 +299,58 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Helper function to group highlights by date
+function groupHighlightsByDate(highlights) {
+  const grouped = {};
+
+  highlights.forEach(highlight => {
+    const date = new Date(highlight.timestamp);
+    const dateKey = date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+
+    grouped[dateKey].push(highlight);
+  });
+
+  return grouped;
+}
+
+// Format grouped highlights as text with date headers
+function formatGroupedHighlights(highlights, pageTitle) {
+  const grouped = groupHighlightsByDate(highlights);
+  const sortedDates = Object.keys(grouped).sort((a, b) => {
+    return new Date(a) - new Date(b);
+  });
+
+  let formattedText = '';
+
+  sortedDates.forEach(date => {
+    formattedText += `\n📅 ${date}\n`;
+    formattedText += '─'.repeat(50) + '\n\n';
+
+    grouped[date].forEach((highlight, index) => {
+      const time = new Date(highlight.timestamp).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      formattedText += `• ${highlight.text}\n`;
+      formattedText += `  ⏰ ${time} | 📄 ${pageTitle}\n\n`;
+    });
+  });
+
+  return formattedText;
+}
+
 // Target Document Management
 async function loadTargetDocument() {
-  const result = await chrome.storage.local.get(['targetDocumentId']);
+  const result = await chrome.storage.sync.get(['targetDocumentId']);
   const docId = result.targetDocumentId;
 
   const statusDiv = document.getElementById('current-doc-status');
@@ -336,7 +389,7 @@ async function setTargetDocument() {
   }
 
   // Save the document ID
-  await chrome.storage.local.set({ targetDocumentId: docId });
+  await chrome.storage.sync.set({ targetDocumentId: docId });
 
   // Clear the input
   input.value = '';
@@ -347,7 +400,7 @@ async function setTargetDocument() {
 }
 
 async function clearTargetDocument() {
-  await chrome.storage.local.remove('targetDocumentId');
+  await chrome.storage.sync.remove('targetDocumentId');
   await loadTargetDocument();
   showNotification('Target document cleared');
 }

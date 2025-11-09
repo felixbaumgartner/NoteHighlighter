@@ -37,7 +37,7 @@ class HighlightManager {
 
   async loadHighlights() {
     const url = window.location.href;
-    const result = await chrome.storage.local.get(['highlights']);
+    const result = await chrome.storage.sync.get(['highlights']);
     const allHighlights = result.highlights || {};
 
     if (allHighlights[url]) {
@@ -278,7 +278,7 @@ class HighlightManager {
 
   async saveHighlight(highlightData) {
     const url = window.location.href;
-    const result = await chrome.storage.local.get(['highlights']);
+    const result = await chrome.storage.sync.get(['highlights']);
     const allHighlights = result.highlights || {};
 
     if (!allHighlights[url]) {
@@ -288,7 +288,7 @@ class HighlightManager {
     allHighlights[url].push(highlightData);
     this.highlights = allHighlights[url];
 
-    await chrome.storage.local.set({ highlights: allHighlights });
+    await chrome.storage.sync.set({ highlights: allHighlights });
     this.showNotification('Text highlighted!');
   }
 
@@ -391,10 +391,10 @@ class HighlightManager {
 
     // Clear from storage
     const url = window.location.href;
-    const result = await chrome.storage.local.get(['highlights']);
+    const result = await chrome.storage.sync.get(['highlights']);
     const allHighlights = result.highlights || {};
     delete allHighlights[url];
-    await chrome.storage.local.set({ highlights: allHighlights });
+    await chrome.storage.sync.set({ highlights: allHighlights });
 
     this.highlights = [];
     this.showNotification('All highlights cleared!');

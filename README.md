@@ -5,9 +5,11 @@ A powerful Chrome extension that allows you to highlight text on any webpage and
 ## Features
 
 - **Text Highlighting**: Select any text on a webpage and highlight it with customizable colors
+- **Chrome Sync**: Highlights automatically sync across all your Chrome browsers (sign in with same Google account)
+- **Date-Grouped Organization**: Highlights are organized by date when copying or exporting
 - **Persistent Storage**: Your highlights are saved and restored when you revisit pages
 - **Multiple Colors**: Choose from 5 beautiful highlight colors (Yellow, Green, Blue, Pink, Orange)
-- **Google Docs Integration**: Copy individual highlights or all highlights to Google Docs
+- **Google Docs Integration**: Copy individual highlights or all highlights to Google Docs (with clipboard fallback)
 - **Target Document**: Set a specific Google Doc to append all highlights to, or create new docs each time
 - **Easy Management**: View, export, and clear your highlights through an intuitive popup interface
 - **Context Menu**: Right-click to quickly highlight or copy text
@@ -49,6 +51,22 @@ A powerful Chrome extension that allows you to highlight text on any webpage and
    - Click "Load unpacked"
    - Select the `NoteHighlighter` folder
    - Note the Extension ID and update your Google OAuth settings if needed
+
+## Chrome Sync - Access Highlights on Multiple Devices
+
+**v1.2.0 Feature**: Your highlights now automatically sync across all your Chrome browsers!
+
+### How It Works:
+1. **Sign in to Chrome** with the same Google account on all your devices (laptops, desktops)
+2. Highlight text on **Laptop 1** → Automatically syncs to Chrome
+3. Open the same page on **Laptop 2** → Highlights automatically appear!
+4. Works bidirectionally - highlight on any device and see it everywhere
+
+### Setup:
+- No additional setup needed!
+- Just ensure you're signed into Chrome with the same Google account on all devices
+- Chrome will handle the syncing automatically
+- Highlights sync within seconds
 
 ## Usage
 
@@ -107,7 +125,20 @@ To go back to creating new documents each time, click "Use New Docs Each Time"
 **Export Highlights**
 1. Open the extension popup
 2. Click "Export Highlights"
-3. A JSON file with all your highlights will be downloaded
+3. A formatted text file with date-grouped highlights will be downloaded
+
+**v1.2.0**: Exported highlights are now organized by date:
+```
+📅 January 15, 2024
+──────────────────────────────
+• "First highlight..."
+  ⏰ 10:30 AM | 📄 Page Title
+
+📅 January 16, 2024
+──────────────────────────────
+• "Another highlight..."
+  ⏰ 9:15 AM | 📄 Page Title
+```
 
 **Clear Highlights**
 1. Open the extension popup
