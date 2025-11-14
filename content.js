@@ -153,17 +153,23 @@ class HighlightManager {
     // Remove button when clicking elsewhere
     setTimeout(() => {
       const removeBtn = (e) => {
-        // Check if click is outside the button AND not on the button's children
-        if (!button.contains(e.target) && e.target.id !== 'do-highlight' && e.target.id !== 'copy-to-docs') {
-          console.log('Note Highlighter: Removing button (clicked elsewhere)');
-          button.remove();
-          document.removeEventListener('click', removeBtn);
-        } else {
-          console.log('Note Highlighter: Click detected on button, keeping it');
+        // Don't remove if clicking on the button itself
+        const clickedElement = e.target;
+        const isHighlightButton = clickedElement.id === 'do-highlight' || clickedElement.closest('#do-highlight');
+        const isCopyButton = clickedElement.id === 'copy-to-docs' || clickedElement.closest('#copy-to-docs');
+        const isButtonContainer = button.contains(clickedElement);
+
+        if (isHighlightButton || isCopyButton || isButtonContainer) {
+          console.log('Note Highlighter: Click on button detected, NOT removing');
+          return; // Don't remove, let the button handler process the click
         }
+
+        console.log('Note Highlighter: Removing button (clicked elsewhere)');
+        button.remove();
+        document.removeEventListener('click', removeBtn, true);
       };
       document.addEventListener('click', removeBtn, true); // Use capture phase
-    }, 100);
+    }, 200); // Increased timeout to ensure button handlers are fully registered
   }
 
   highlightRange(range, selectedText) {
