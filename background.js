@@ -73,12 +73,16 @@ async function handleMessage(request, sender, sendResponse) {
 // Authentication with Google
 async function authenticate() {
   try {
+    console.log('Starting authentication...');
+
     // Get OAuth token
     const token = await new Promise((resolve, reject) => {
       chrome.identity.getAuthToken({ interactive: true }, (token) => {
         if (chrome.runtime.lastError) {
+          console.error('Chrome identity error:', chrome.runtime.lastError);
           reject(chrome.runtime.lastError);
         } else {
+          console.log('Token received successfully');
           resolve(token);
         }
       });
@@ -87,13 +91,19 @@ async function authenticate() {
     if (token) {
       authToken = token;
       isAuthenticated = true;
+      console.log('Authentication successful');
       return { success: true, token: token };
     }
 
+    console.error('No token received from Chrome identity API');
     return { success: false, error: 'No token received' };
   } catch (error) {
-    console.error('Authentication error:', error);
-    return { success: false, error: error.message };
+    console.error('Authentication error details:', {
+      message: error.message,
+      stack: error.stack,
+      fullError: error
+    });
+    return { success: false, error: error.message || JSON.stringify(error) };
   }
 }
 
