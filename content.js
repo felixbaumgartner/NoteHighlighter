@@ -80,11 +80,10 @@ class HighlightManager {
       });
 
       if (highlightRemoved && this.highlightsApplied) {
-        console.log('Note Highlighter: ⚠️ Highlights were removed by page, re-applying...');
-
-        // Debounce re-application to avoid excessive updates
+        // Page removed our highlights, quietly re-apply them
         clearTimeout(this.reapplyTimeout);
         this.reapplyTimeout = setTimeout(() => {
+          console.log('Note Highlighter: Re-applying highlights after page modification');
           this.reapplyStoredHighlights();
         }, 300);
       }
@@ -110,7 +109,10 @@ class HighlightManager {
   checkIfHighlightsVisible() {
     // Check if any highlight spans are currently in the DOM
     const visibleHighlights = document.querySelectorAll('.note-highlight').length;
-    console.log(`Note Highlighter: Found ${visibleHighlights} visible highlights in DOM`);
+    // Only log if there's a mismatch
+    if (visibleHighlights !== this.highlights.length && this.highlights.length > 0) {
+      console.log(`Note Highlighter: Expected ${this.highlights.length} highlights, found ${visibleHighlights} visible`);
+    }
     return visibleHighlights > 0;
   }
 
@@ -152,7 +154,7 @@ class HighlightManager {
     setTimeout(() => {
       const stillVisible = this.checkIfHighlightsVisible();
       if (!stillVisible && this.highlights.length > 0) {
-        console.log('Note Highlighter: ⚠️ Highlights disappeared after application, page likely re-rendered');
+        console.log('Note Highlighter: Highlights removed by page, will retry if needed');
       }
     }, 500);
   }
@@ -457,7 +459,8 @@ class HighlightManager {
     }
 
     if (!applied) {
-      console.warn('Note Highlighter: ⚠️ Could not re-apply highlight - text not found or already highlighted');
+      // This is normal for overlapping highlights - no need to warn
+      console.log('Note Highlighter: Skipped highlight (text not found or overlaps with existing highlight)');
     }
   }
 
