@@ -37,19 +37,29 @@ class HighlightManager {
 
   async loadHighlights() {
     const url = window.location.href;
+    console.log('Note Highlighter: Loading highlights for URL:', url);
+
     const result = await chrome.storage.sync.get(['highlights']);
     const allHighlights = result.highlights || {};
 
+    console.log('Note Highlighter: All highlights from storage:', allHighlights);
+
     if (allHighlights[url]) {
       this.highlights = allHighlights[url];
+      console.log(`Note Highlighter: Found ${this.highlights.length} highlights for this page`);
       this.applyStoredHighlights();
+    } else {
+      console.log('Note Highlighter: No highlights found for this page');
     }
   }
 
   applyStoredHighlights() {
-    this.highlights.forEach(highlight => {
+    console.log(`Note Highlighter: Applying ${this.highlights.length} stored highlights...`);
+    this.highlights.forEach((highlight, index) => {
+      console.log(`Note Highlighter: Applying highlight ${index + 1}:`, highlight.text.substring(0, 50));
       this.applyHighlight(highlight);
     });
+    console.log('Note Highlighter: Finished applying stored highlights');
   }
 
   handleTextSelection(e) {
@@ -265,8 +275,9 @@ class HighlightManager {
   }
 
   applyHighlight(highlightData) {
+    console.log('Note Highlighter: applyHighlight() - Looking for text:', highlightData.text.substring(0, 50));
+
     // Find and highlight text in the document
-    // This is a simplified version - you may want to use a more robust text highlighting library
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT,
@@ -282,8 +293,13 @@ class HighlightManager {
       }
     }
 
-    // Apply highlight to matching text nodes
-    nodes.forEach(textNode => {
+    console.log(`Note Highlighter: Found ${nodes.length} text nodes containing the text`);
+
+    // Apply highlight to matching text nodes (only first occurrence to avoid duplicates)
+    let applied = false;
+    for (const textNode of nodes) {
+      if (applied) break; // Only highlight first occurrence
+
       const text = textNode.textContent;
       const index = text.indexOf(highlightData.text);
 
@@ -299,6 +315,8 @@ class HighlightManager {
 
         try {
           range.surroundContents(span);
+          console.log('Note Highlighter: ✅ Successfully re-applied highlight');
+          applied = true;
 
           span.addEventListener('click', (e) => {
             if (e.ctrlKey || e.metaKey) {
@@ -306,10 +324,30 @@ class HighlightManager {
             }
           });
         } catch (e) {
-          // Ignore errors for complex DOM structures
+          console.error('Note Highlighter: ❌ Error re-applying highlight:', e.message);
+          // Try alternative method
+          try {
+            const contents = range.extractContents();
+            span.appendChild(contents);
+            range.insertNode(span);
+            console.log('Note Highlighter: ✅ Successfully re-applied highlight using alternative method');
+            applied = true;
+
+            span.addEventListener('click', (e) => {
+              if (e.ctrlKey || e.metaKey) {
+                this.copyToGoogleDocs(highlightData.text);
+              }
+            });
+          } catch (e2) {
+            console.error('Note Highlighter: ❌ Alternative method also failed:', e2.message);
+          }
         }
       }
-    });
+    }
+
+    if (!applied) {
+      console.warn('Note Highlighter: ⚠️ Could not re-apply highlight - text not found or already highlighted');
+    }
   }
 
   async saveHighlight(highlightData) {
