@@ -53,6 +53,14 @@ class HighlightManager {
   }
 
   handleTextSelection(e) {
+    // Ignore if the mouseup happened on our button
+    if (e.target.closest('.note-highlighter-btn') ||
+        e.target.closest('#do-highlight') ||
+        e.target.closest('#copy-to-docs')) {
+      console.log('Note Highlighter: Mouseup on button detected, ignoring');
+      return;
+    }
+
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
 
