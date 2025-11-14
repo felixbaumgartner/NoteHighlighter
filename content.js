@@ -164,13 +164,15 @@ class HighlightManager {
   }
 
   highlightRange(range, selectedText) {
-    console.log('Note Highlighter: highlightRange called', {
-      hasRange: !!range,
-      textLength: selectedText ? selectedText.length : 0
-    });
+    console.log('Note Highlighter: ======== highlightRange called ========');
+    console.log('Note Highlighter: Range:', range);
+    console.log('Note Highlighter: Selected text:', selectedText);
+    console.log('Note Highlighter: Has range:', !!range);
+    console.log('Note Highlighter: Text length:', selectedText ? selectedText.length : 0);
 
     if (!range || !selectedText) {
-      console.error('Note Highlighter: Missing range or text');
+      console.error('Note Highlighter: ❌ Missing range or text!');
+      this.showNotification('❌ Error: No text selected');
       return;
     }
 
@@ -182,7 +184,7 @@ class HighlightManager {
       id: this.generateId()
     };
 
-    console.log('Note Highlighter: Created highlight data', highlightData);
+    console.log('Note Highlighter: Created highlight data:', highlightData);
 
     // Wrap selection in highlight span
     const span = document.createElement('span');
@@ -190,11 +192,12 @@ class HighlightManager {
     span.setAttribute('data-highlight-id', highlightData.id);
     span.style.backgroundColor = this.currentColor;
 
-    console.log('Note Highlighter: Created span, attempting to surround contents');
+    console.log('Note Highlighter: Created span element');
+    console.log('Note Highlighter: Attempting to surround contents...');
 
     try {
       range.surroundContents(span);
-      console.log('Note Highlighter: Successfully surrounded contents');
+      console.log('Note Highlighter: ✅ Successfully surrounded contents with span!');
 
       // Add click handler to copy this highlight
       span.addEventListener('click', (e) => {
@@ -205,15 +208,19 @@ class HighlightManager {
         }
       });
 
+      console.log('Note Highlighter: Added click handler to span');
+
       // Save highlight
+      console.log('Note Highlighter: Calling saveHighlight...');
       this.saveHighlight(highlightData);
-      console.log('Note Highlighter: Highlight saved');
 
       // Clear selection
       window.getSelection().removeAllRanges();
+      console.log('Note Highlighter: ✅ Highlight complete!');
     } catch (e) {
-      console.error('Note Highlighter: Error applying highlight:', e);
-      this.showNotification('Could not highlight this selection. Try a simpler text selection.');
+      console.error('Note Highlighter: ❌ Error in surroundContents:', e);
+      console.error('Note Highlighter: Error details:', e.message, e.stack);
+      this.showNotification('Could not highlight: ' + e.message);
     }
   }
 
@@ -278,18 +285,50 @@ class HighlightManager {
 
   async saveHighlight(highlightData) {
     const url = window.location.href;
-    const result = await chrome.storage.sync.get(['highlights']);
-    const allHighlights = result.highlights || {};
 
-    if (!allHighlights[url]) {
-      allHighlights[url] = [];
+    try {
+      console.log('Note Highlighter: Attempting to save highlight', highlightData);
+
+      const result = await chrome.storage.sync.get(['highlights']);
+      const allHighlights = result.highlights || {};
+
+      if (!allHighlights[url]) {
+        allHighlights[url] = [];
+      }
+
+      allHighlights[url].push(highlightData);
+      this.highlights = allHighlights[url];
+
+      console.log('Note Highlighter: Saving to storage...', { url, count: allHighlights[url].length });
+      await chrome.storage.sync.set({ highlights: allHighlights });
+
+      console.log('Note Highlighter: ✅ Highlight saved successfully!');
+      this.showNotification('Text highlighted!');
+    } catch (error) {
+      console.error('Note Highlighter: ❌ Error saving highlight:', error);
+      this.showNotification('Error saving highlight: ' + error.message);
+
+      // Try fallback to local storage if sync fails
+      try {
+        console.log('Note Highlighter: Trying local storage fallback...');
+        const result = await chrome.storage.local.get(['highlights']);
+        const allHighlights = result.highlights || {};
+
+        if (!allHighlights[url]) {
+          allHighlights[url] = [];
+        }
+
+        allHighlights[url].push(highlightData);
+        this.highlights = allHighlights[url];
+
+        await chrome.storage.local.set({ highlights: allHighlights });
+        console.log('Note Highlighter: ✅ Saved to local storage instead');
+        this.showNotification('Text highlighted (saved locally)!');
+      } catch (localError) {
+        console.error('Note Highlighter: ❌ Local storage also failed:', localError);
+        this.showNotification('Failed to save highlight');
+      }
     }
-
-    allHighlights[url].push(highlightData);
-    this.highlights = allHighlights[url];
-
-    await chrome.storage.sync.set({ highlights: allHighlights });
-    this.showNotification('Text highlighted!');
   }
 
   async copyToGoogleDocs(text) {
