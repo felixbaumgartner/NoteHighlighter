@@ -11,6 +11,8 @@ class HighlightManager {
       { name: 'pink', value: '#f48fb1' },
       { name: 'orange', value: '#ffb74d' }
     ];
+    this.highlightsApplied = false;
+    this.reapplyTimeout = null;
     this.init();
   }
 
@@ -52,11 +54,71 @@ class HighlightManager {
 
   delayedLoadHighlights() {
     console.log('Note Highlighter: Scheduling delayed highlight load...');
-    // Wait an additional 500ms to ensure dynamic content has loaded
-    setTimeout(() => {
-      console.log('Note Highlighter: Now loading highlights after delay');
-      this.loadHighlights();
-    }, 500);
+    // Wait 2 seconds for dynamic content to fully load, then retry with increasing delays
+    const delays = [2000, 1000, 1000]; // Initial 2s, then retry at 3s and 4s
+
+    delays.forEach((delay, index) => {
+      setTimeout(() => {
+        console.log(`Note Highlighter: Loading highlights (attempt ${index + 1})...`);
+        this.loadAndApplyHighlights();
+      }, delays.slice(0, index + 1).reduce((a, b) => a + b, 0));
+    });
+
+    // Set up MutationObserver to re-apply highlights if DOM changes
+    this.setupDOMObserver();
+  }
+
+  setupDOMObserver() {
+    console.log('Note Highlighter: Setting up DOM observer for dynamic content...');
+
+    const observer = new MutationObserver((mutations) => {
+      // Check if any of our highlight spans were removed
+      const highlightRemoved = mutations.some(mutation => {
+        return Array.from(mutation.removedNodes).some(node => {
+          return node.classList && node.classList.contains('note-highlight');
+        });
+      });
+
+      if (highlightRemoved && this.highlightsApplied) {
+        console.log('Note Highlighter: ⚠️ Highlights were removed by page, re-applying...');
+
+        // Debounce re-application to avoid excessive updates
+        clearTimeout(this.reapplyTimeout);
+        this.reapplyTimeout = setTimeout(() => {
+          this.reapplyStoredHighlights();
+        }, 300);
+      }
+    });
+
+    // Observe the entire document body for changes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log('Note Highlighter: DOM observer active');
+  }
+
+  async loadAndApplyHighlights() {
+    await this.loadHighlights();
+    if (this.highlights.length > 0 && !this.checkIfHighlightsVisible()) {
+      console.log('Note Highlighter: Highlights not visible, re-applying...');
+      this.reapplyStoredHighlights();
+    }
+  }
+
+  checkIfHighlightsVisible() {
+    // Check if any highlight spans are currently in the DOM
+    const visibleHighlights = document.querySelectorAll('.note-highlight').length;
+    console.log(`Note Highlighter: Found ${visibleHighlights} visible highlights in DOM`);
+    return visibleHighlights > 0;
+  }
+
+  reapplyStoredHighlights() {
+    if (this.highlights.length > 0) {
+      console.log('Note Highlighter: Re-applying stored highlights...');
+      this.applyStoredHighlights();
+    }
   }
 
   async loadHighlights() {
@@ -83,7 +145,16 @@ class HighlightManager {
       console.log(`Note Highlighter: Applying highlight ${index + 1}:`, highlight.text.substring(0, 50));
       this.applyHighlight(highlight);
     });
+    this.highlightsApplied = true;
     console.log('Note Highlighter: Finished applying stored highlights');
+
+    // Check after a short delay if highlights are still visible
+    setTimeout(() => {
+      const stillVisible = this.checkIfHighlightsVisible();
+      if (!stillVisible && this.highlights.length > 0) {
+        console.log('Note Highlighter: ⚠️ Highlights disappeared after application, page likely re-rendered');
+      }
+    }, 500);
   }
 
   handleTextSelection(e) {
