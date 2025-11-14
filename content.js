@@ -196,8 +196,19 @@ class HighlightManager {
     console.log('Note Highlighter: Attempting to surround contents...');
 
     try {
-      range.surroundContents(span);
-      console.log('Note Highlighter: ✅ Successfully surrounded contents with span!');
+      // Try method 1: surroundContents (fastest but can fail)
+      try {
+        range.surroundContents(span);
+        console.log('Note Highlighter: ✅ Successfully surrounded contents with span (method 1)!');
+      } catch (surroundError) {
+        console.log('Note Highlighter: Method 1 failed, trying alternative method...', surroundError.message);
+
+        // Method 2: Extract contents and re-insert (more reliable)
+        const contents = range.extractContents();
+        span.appendChild(contents);
+        range.insertNode(span);
+        console.log('Note Highlighter: ✅ Successfully highlighted using alternative method (method 2)!');
+      }
 
       // Add click handler to copy this highlight
       span.addEventListener('click', (e) => {
