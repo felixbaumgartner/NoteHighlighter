@@ -17,9 +17,6 @@ class HighlightManager {
   init() {
     console.log('Note Highlighter: Initializing content script');
 
-    // Load saved highlights from storage
-    this.loadHighlights();
-
     // Listen for text selection
     document.addEventListener('mouseup', (e) => this.handleTextSelection(e));
 
@@ -32,7 +29,34 @@ class HighlightManager {
     // Create context menu for highlights
     this.createHighlightMenu();
 
+    // Wait for page to be fully loaded before applying highlights
+    if (document.readyState === 'loading') {
+      console.log('Note Highlighter: Document still loading, waiting...');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('Note Highlighter: DOMContentLoaded fired');
+        this.delayedLoadHighlights();
+      });
+    } else if (document.readyState === 'interactive') {
+      console.log('Note Highlighter: Document interactive, waiting for complete...');
+      window.addEventListener('load', () => {
+        console.log('Note Highlighter: Window load fired');
+        this.delayedLoadHighlights();
+      });
+    } else {
+      console.log('Note Highlighter: Document already complete');
+      this.delayedLoadHighlights();
+    }
+
     console.log('Note Highlighter: Content script initialized successfully');
+  }
+
+  delayedLoadHighlights() {
+    console.log('Note Highlighter: Scheduling delayed highlight load...');
+    // Wait an additional 500ms to ensure dynamic content has loaded
+    setTimeout(() => {
+      console.log('Note Highlighter: Now loading highlights after delay');
+      this.loadHighlights();
+    }, 500);
   }
 
   async loadHighlights() {
@@ -311,7 +335,13 @@ class HighlightManager {
         const span = document.createElement('span');
         span.className = 'note-highlight';
         span.setAttribute('data-highlight-id', highlightData.id);
-        span.style.backgroundColor = highlightData.color;
+        // Use inline styles with !important-like behavior by setting cssText
+        span.style.cssText = `
+          background-color: ${highlightData.color} !important;
+          padding: 2px 0 !important;
+          border-radius: 2px !important;
+          cursor: pointer !important;
+        `;
 
         try {
           range.surroundContents(span);
@@ -327,13 +357,23 @@ class HighlightManager {
           console.error('Note Highlighter: ❌ Error re-applying highlight:', e.message);
           // Try alternative method
           try {
+            const newSpan = document.createElement('span');
+            newSpan.className = 'note-highlight';
+            newSpan.setAttribute('data-highlight-id', highlightData.id);
+            newSpan.style.cssText = `
+              background-color: ${highlightData.color} !important;
+              padding: 2px 0 !important;
+              border-radius: 2px !important;
+              cursor: pointer !important;
+            `;
+
             const contents = range.extractContents();
-            span.appendChild(contents);
-            range.insertNode(span);
+            newSpan.appendChild(contents);
+            range.insertNode(newSpan);
             console.log('Note Highlighter: ✅ Successfully re-applied highlight using alternative method');
             applied = true;
 
-            span.addEventListener('click', (e) => {
+            newSpan.addEventListener('click', (e) => {
               if (e.ctrlKey || e.metaKey) {
                 this.copyToGoogleDocs(highlightData.text);
               }
