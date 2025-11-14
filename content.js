@@ -131,45 +131,46 @@ class HighlightManager {
     const copyBtn = document.getElementById('copy-to-docs');
 
     if (highlightBtn) {
+      highlightBtn.addEventListener('mousedown', (e) => {
+        console.log('Note Highlighter: Highlight button MOUSEDOWN');
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+
       highlightBtn.addEventListener('click', (e) => {
         console.log('Note Highlighter: Highlight button clicked');
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         this.highlightRange(range, selectedText);
         button.remove();
-      });
+      }, true);
     }
 
     if (copyBtn) {
+      copyBtn.addEventListener('mousedown', (e) => {
+        console.log('Note Highlighter: Copy button MOUSEDOWN');
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+
       copyBtn.addEventListener('click', (e) => {
         console.log('Note Highlighter: Copy button clicked');
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         this.copyToGoogleDocs(selectedText);
         button.remove();
-      });
+      }, true);
     }
 
-    // Remove button when clicking elsewhere
+    // Auto-remove button after 10 seconds
     setTimeout(() => {
-      const removeBtn = (e) => {
-        // Don't remove if clicking on the button itself
-        const clickedElement = e.target;
-        const isHighlightButton = clickedElement.id === 'do-highlight' || clickedElement.closest('#do-highlight');
-        const isCopyButton = clickedElement.id === 'copy-to-docs' || clickedElement.closest('#copy-to-docs');
-        const isButtonContainer = button.contains(clickedElement);
-
-        if (isHighlightButton || isCopyButton || isButtonContainer) {
-          console.log('Note Highlighter: Click on button detected, NOT removing');
-          return; // Don't remove, let the button handler process the click
-        }
-
-        console.log('Note Highlighter: Removing button (clicked elsewhere)');
+      if (button && button.parentNode) {
+        console.log('Note Highlighter: Removing button (timeout)');
         button.remove();
-        document.removeEventListener('click', removeBtn, true);
-      };
-      document.addEventListener('click', removeBtn, true); // Use capture phase
-    }, 200); // Increased timeout to ensure button handlers are fully registered
+      }
+    }, 10000);
   }
 
   highlightRange(range, selectedText) {
