@@ -241,6 +241,29 @@ class HighlightManager {
 
     console.log('Note Highlighter: Button appended, adding event listeners');
 
+    // Function to remove button and cleanup
+    const removeButton = () => {
+      if (button && button.parentNode) {
+        console.log('Note Highlighter: Removing button');
+        button.remove();
+        document.removeEventListener('click', clickOutsideHandler, true);
+      }
+    };
+
+    // Click outside handler to close the popup
+    const clickOutsideHandler = (e) => {
+      // Check if click is outside the button
+      if (!button.contains(e.target)) {
+        console.log('Note Highlighter: Click detected outside button, removing popup');
+        removeButton();
+      }
+    };
+
+    // Add click outside listener after a small delay to avoid immediate triggering
+    setTimeout(() => {
+      document.addEventListener('click', clickOutsideHandler, true);
+    }, 100);
+
     // Add click handlers with preserved range and text
     const highlightBtn = document.getElementById('do-highlight');
     const copyBtn = document.getElementById('copy-to-docs');
@@ -258,7 +281,7 @@ class HighlightManager {
         e.stopPropagation();
         e.stopImmediatePropagation();
         this.highlightRange(range, selectedText);
-        button.remove();
+        removeButton();
       }, true);
     }
 
@@ -275,16 +298,13 @@ class HighlightManager {
         e.stopPropagation();
         e.stopImmediatePropagation();
         this.copyToGoogleDocs(selectedText);
-        button.remove();
+        removeButton();
       }, true);
     }
 
     // Auto-remove button after 10 seconds
     setTimeout(() => {
-      if (button && button.parentNode) {
-        console.log('Note Highlighter: Removing button (timeout)');
-        button.remove();
-      }
+      removeButton();
     }, 10000);
   }
 
