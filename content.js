@@ -547,6 +547,14 @@ class HighlightManager {
       return;
     }
 
+    // Check for extension context invalidation
+    if (!chrome.runtime.id) {
+      console.error('Extension context invalidated - extension was reloaded');
+      this.showNotification('⚠️ Please reload this page after updating the extension');
+      this.copyToClipboard(text);
+      return;
+    }
+
     // Send message to background script to handle Google Docs API
     try {
       chrome.runtime.sendMessage({
@@ -556,6 +564,15 @@ class HighlightManager {
       }, (response) => {
         if (chrome.runtime.lastError) {
           console.error('Runtime error:', chrome.runtime.lastError);
+
+          // Check if this is a context invalidation error
+          if (chrome.runtime.lastError.message &&
+              chrome.runtime.lastError.message.includes('Extension context invalidated')) {
+            this.showNotification('⚠️ Please reload this page after updating the extension');
+            this.copyToClipboard(text);
+            return;
+          }
+
           // Fallback to clipboard if Google Docs fails
           this.copyToClipboard(text);
           return;
@@ -579,6 +596,14 @@ class HighlightManager {
       });
     } catch (error) {
       console.error('Exception copying to Google Docs:', error);
+
+      // Check if this is a context invalidation error
+      if (error.message && error.message.includes('Extension context invalidated')) {
+        this.showNotification('⚠️ Please reload this page after updating the extension');
+        this.copyToClipboard(text);
+        return;
+      }
+
       this.showNotification('Error: ' + error.message + '. Copying to clipboard...');
       this.copyToClipboard(text);
     }
