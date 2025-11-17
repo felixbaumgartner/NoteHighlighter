@@ -140,11 +140,13 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
     if (targetDocId) {
       // Append to existing document
       documentId = targetDocId;
+      console.log('DEBUG: Appending to existing document, will NOT open tab');
       const success = await appendToGoogleDoc(documentId, text, title);
       if (!success.success) {
         throw new Error(success.error || 'Failed to append to document');
       }
 
+      console.log('DEBUG: Successfully appended, returning without opening tab');
       return { success: true, documentId: documentId, appended: true };
     }
 
@@ -195,6 +197,8 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
       throw new Error(`Failed to update document: ${batchUpdateResponse.status}`);
     }
 
+    console.log('DEBUG: Document created successfully, will NOT open tab');
+    console.log('DEBUG: Returning success without chrome.tabs.create()');
     return { success: true, documentId: documentId };
   } catch (error) {
     console.error('Error copying to Google Docs:', error);
