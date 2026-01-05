@@ -78,6 +78,7 @@ async function handleMessage(request, sender, sendResponse) {
 // Fetch user info from Google
 async function fetchUserInfo(token) {
   try {
+    console.log('Fetching user info from Google API...');
     const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -85,15 +86,18 @@ async function fetchUserInfo(token) {
     });
 
     if (!response.ok) {
-      console.error('Failed to fetch user info:', response.status);
+      console.error('❌ Failed to fetch user info. Status:', response.status);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
       return null;
     }
 
     const userInfo = await response.json();
-    console.log('User info fetched:', userInfo.email);
+    console.log('✅ User info fetched successfully:', userInfo.email);
     return userInfo.email;
   } catch (error) {
-    console.error('Error fetching user info:', error);
+    console.error('❌ Error fetching user info:', error);
+    console.error('Error details:', error.message, error.stack);
     return null;
   }
 }
@@ -102,15 +106,18 @@ async function fetchUserInfo(token) {
 async function authenticate() {
   try {
     console.log('Starting authentication...');
+    console.log('Manifest OAuth config:', chrome.runtime.getManifest().oauth2);
 
     // Get OAuth token
     const token = await new Promise((resolve, reject) => {
       chrome.identity.getAuthToken({ interactive: true }, (token) => {
         if (chrome.runtime.lastError) {
-          console.error('Chrome identity error:', chrome.runtime.lastError);
+          console.error('❌ Chrome identity error:', chrome.runtime.lastError);
+          console.error('Error message:', chrome.runtime.lastError.message);
           reject(chrome.runtime.lastError);
         } else {
-          console.log('Token received successfully');
+          console.log('✅ Token received successfully');
+          console.log('Token (first 20 chars):', token?.substring(0, 20) + '...');
           resolve(token);
         }
       });

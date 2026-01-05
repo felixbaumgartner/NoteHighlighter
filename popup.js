@@ -274,7 +274,13 @@ async function handleAuth() {
         updateAuthUI(true, response.email);
         showNotification('Connected to Google!');
       } else {
-        showNotification('Authentication failed');
+        // Show detailed error to user
+        const errorMsg = response?.error || 'Unknown error';
+        console.error('Authentication failed:', errorMsg);
+        showNotification('Auth failed - check console (F12)');
+
+        // Also alert with more details
+        alert(`Authentication failed!\n\nError: ${errorMsg}\n\nPlease check:\n1. Extension ID matches Google Cloud Console\n2. OAuth client is "Chrome Extension" type\n3. Google Docs API is enabled\n\nSee console (F12) for details.`);
       }
     });
   }
