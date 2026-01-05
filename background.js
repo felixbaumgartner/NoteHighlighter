@@ -2,6 +2,7 @@
 
 let authToken = null;
 let isAuthenticated = false;
+let userEmail = null;
 
 // Initialize context menu
 chrome.runtime.onInstalled.addListener(() => {
@@ -57,7 +58,11 @@ async function handleMessage(request, sender, sendResponse) {
       break;
 
     case 'checkAuth':
-      sendResponse({ authenticated: isAuthenticated });
+      sendResponse({ authenticated: isAuthenticated, email: userEmail });
+      break;
+
+    case 'getUserInfo':
+      sendResponse({ email: userEmail, authenticated: isAuthenticated });
       break;
 
     case 'signOut':
@@ -67,6 +72,29 @@ async function handleMessage(request, sender, sendResponse) {
 
     default:
       sendResponse({ error: 'Unknown action' });
+  }
+}
+
+// Fetch user info from Google
+async function fetchUserInfo(token) {
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch user info:', response.status);
+      return null;
+    }
+
+    const userInfo = await response.json();
+    console.log('User info fetched:', userInfo.email);
+    return userInfo.email;
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
   }
 }
 
@@ -91,8 +119,12 @@ async function authenticate() {
     if (token) {
       authToken = token;
       isAuthenticated = true;
-      console.log('Authentication successful');
-      return { success: true, token: token };
+
+      // Fetch user email
+      userEmail = await fetchUserInfo(token);
+
+      console.log('Authentication successful for user:', userEmail);
+      return { success: true, token: token, email: userEmail };
     }
 
     console.error('No token received from Chrome identity API');
@@ -117,6 +149,7 @@ async function signOut() {
 
     authToken = null;
     isAuthenticated = false;
+    userEmail = null;
   }
 }
 
@@ -166,7 +199,11 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
     });
 
     if (!createDocResponse.ok) {
-      throw new Error(`Failed to create document: ${createDocResponse.status}`);
+      const errorText = await createDocResponse.text();
+      if (createDocResponse.status === 401 || createDocResponse.status === 403) {
+        throw new Error(`Authentication failed (${createDocResponse.status}). Please ensure you're signed into Chrome with the correct Google account (${userEmail || 'unknown'}). You may need to sign out and sign in again.`);
+      }
+      throw new Error(`Failed to create document: ${createDocResponse.status} - ${errorText}`);
     }
 
     const doc = await createDocResponse.json();
@@ -240,7 +277,11 @@ async function appendToGoogleDoc(documentId, text, title = 'Highlight') {
     );
 
     if (!docResponse.ok) {
-      throw new Error(`Failed to get document: ${docResponse.status}`);
+      const errorText = await docResponse.text();
+      if (docResponse.status === 401 || docResponse.status === 403) {
+        throw new Error(`Access denied (${docResponse.status}). This document may belong to a different Google account. You're authenticated as ${userEmail || 'unknown'}. Please sign out and sign in with the correct account.`);
+      }
+      throw new Error(`Failed to get document: ${docResponse.status} - ${errorText}`);
     }
 
     const docData = await docResponse.json();

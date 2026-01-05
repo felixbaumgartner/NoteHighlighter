@@ -39,7 +39,8 @@
   "oauth2": {
     "client_id": "669855570172-81ksl7l7fcf7jh68er7b30k4b0nsopn6.apps.googleusercontent.com",
     "scopes": [
-      "https://www.googleapis.com/auth/documents"
+      "https://www.googleapis.com/auth/documents",
+      "https://www.googleapis.com/auth/userinfo.email"
     ]
   },
   "web_accessible_resources": [
