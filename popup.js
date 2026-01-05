@@ -224,26 +224,36 @@ async function checkAuthStatus() {
   chrome.runtime.sendMessage({ action: 'checkAuth' }, (response) => {
     if (response && response.authenticated) {
       isAuthenticated = true;
-      updateAuthUI(true);
+      updateAuthUI(true, response.email);
     } else {
       isAuthenticated = false;
-      updateAuthUI(false);
+      updateAuthUI(false, null);
     }
   });
 }
 
-function updateAuthUI(authenticated) {
+function updateAuthUI(authenticated, email = null) {
   const authStatus = document.getElementById('auth-status');
   const authMessage = document.getElementById('auth-message');
+  const userEmailElement = document.getElementById('user-email');
   const authBtn = document.getElementById('auth-btn');
 
   if (authenticated) {
     authStatus.classList.add('connected');
     authMessage.textContent = 'Connected to Google';
+
+    if (email) {
+      userEmailElement.textContent = email;
+      userEmailElement.style.display = 'block';
+    } else {
+      userEmailElement.style.display = 'none';
+    }
+
     authBtn.textContent = 'Disconnect';
   } else {
     authStatus.classList.remove('connected');
     authMessage.textContent = 'Not connected';
+    userEmailElement.style.display = 'none';
     authBtn.textContent = 'Connect Google';
   }
 }
@@ -253,7 +263,7 @@ async function handleAuth() {
     // Disconnect
     chrome.runtime.sendMessage({ action: 'signOut' }, () => {
       isAuthenticated = false;
-      updateAuthUI(false);
+      updateAuthUI(false, null);
       showNotification('Disconnected from Google');
     });
   } else {
@@ -261,7 +271,7 @@ async function handleAuth() {
     chrome.runtime.sendMessage({ action: 'authenticate' }, (response) => {
       if (response && response.success) {
         isAuthenticated = true;
-        updateAuthUI(true);
+        updateAuthUI(true, response.email);
         showNotification('Connected to Google!');
       } else {
         showNotification('Authentication failed');
