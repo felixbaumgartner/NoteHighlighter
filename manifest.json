@@ -10,7 +10,8 @@
     "identity"
   ],
   "host_permissions": [
-    "https://docs.google.com/*"
+    "https://docs.google.com/*",
+    "https://www.googleapis.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
