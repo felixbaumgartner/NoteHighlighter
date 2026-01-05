@@ -145,11 +145,6 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
         throw new Error(success.error || 'Failed to append to document');
       }
 
-      // Open the document
-      chrome.tabs.create({
-        url: `https://docs.google.com/document/d/${documentId}/edit`
-      });
-
       return { success: true, documentId: documentId, appended: true };
     }
 
@@ -199,11 +194,6 @@ async function copyToGoogleDocs(text, title = 'Highlighted Notes') {
     if (!batchUpdateResponse.ok) {
       throw new Error(`Failed to update document: ${batchUpdateResponse.status}`);
     }
-
-    // Open the created document in a new tab
-    chrome.tabs.create({
-      url: `https://docs.google.com/document/d/${documentId}/edit`
-    });
 
     return { success: true, documentId: documentId };
   } catch (error) {
